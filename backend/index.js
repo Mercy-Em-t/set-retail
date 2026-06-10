@@ -56,7 +56,7 @@ app.post('/api/v1/telemetry/orders', requireApiKey, async (req, res) => {
     }
 
     // 2. Route the payload to the Python SQLite Database
-    const engineUrl = process.env.PYTHON_ENGINE_URL || 'http://127.0.0.1:8000';
+    const engineUrl = 'https://set-retail-engine.onrender.com';
     const ingestRes = await fetch(`${engineUrl}/api/v1/telemetry/ingest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -100,7 +100,7 @@ app.get('/api/temporal-audit', requireSupabaseAuth, async (req, res) => {
     const q_t2_start = t2_start || "2024-01-01 00:00:00";
     const q_t2_end = t2_end || "2024-01-31 23:59:59";
 
-    const engineUrl = process.env.PYTHON_ENGINE_URL || 'http://127.0.0.1:8000';
+    const engineUrl = 'https://set-retail-engine.onrender.com';
     const url = `${engineUrl}/api/v1/analytics/audit?t1_start=${encodeURIComponent(q_t1_start)}&t1_end=${encodeURIComponent(q_t1_end)}&t2_start=${encodeURIComponent(q_t2_start)}&t2_end=${encodeURIComponent(q_t2_end)}`;
     
     const response = await fetch(url);
@@ -165,7 +165,7 @@ app.post('/api/v1/onboarding/upload-csv', requireSupabaseAuth, upload.single('fi
         };
 
         // Send the payload to the Python Data Science Engine for ingestion
-        const engineUrl = process.env.PYTHON_ENGINE_URL || 'http://127.0.0.1:8000';
+        const engineUrl = 'https://set-retail-engine.onrender.com';
         const ingestRes = await fetch(`${engineUrl}/api/v1/telemetry/ingest`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
