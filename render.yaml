@@ -1,0 +1,17 @@
+services:
+  # The Node.js API Gateway (Using Dockerfile.node)
+  - type: web
+    name: set-retail-gateway
+    env: docker
+    dockerfilePath: ./Dockerfile.node
+    plan: free
+    envVars:
+      - key: PYTHON_ENGINE_URL
+        value: "http://set-retail-engine:8000"
+
+  # The Python Discrete Math Engine (Using Dockerfile.python)
+  - type: web
+    name: set-retail-engine
+    env: docker
+    dockerfilePath: ./Dockerfile.python
+    plan: free

@@ -11,5 +11,6 @@ COPY ./discrete_engine /app/discrete_engine
 # Expose Port
 EXPOSE 8000
 
-# Start Uvicorn Server
-CMD ["uvicorn", "discrete_engine.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start Uvicorn Server from inside the directory
+WORKDIR /app/discrete_engine
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
