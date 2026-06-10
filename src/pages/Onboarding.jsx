@@ -26,12 +26,21 @@ export default function Onboarding() {
     setUploading(true);
     setStatus('Parsing CSV and routing to Data Science Engine...');
     
+    // Get the active Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session || !session.access_token) {
+      setStatus('Error: Your session has expired. Please log in again.');
+      setUploading(false);
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+
+    const token = session.access_token;
+    
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('shopId', user.shopId);
-
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
+    formData.append('shopId', user?.id || 'DEFAULT-SHOP');
 
     try {
       const res = await fetch('https://set-retail-gateway.onrender.com/api/v1/onboarding/upload-csv', {
