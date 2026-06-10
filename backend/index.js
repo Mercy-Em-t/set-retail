@@ -21,6 +21,12 @@ async function loadEngineModules() {
   
   SecureDatabaseAdapter = adapterModule.SecureDatabaseAdapter;
   DiscreteEngineFacade = facadeModule.DiscreteEngineFacade;
+  
+  // We'll also use the Supabase client initialized in the backend
+  const { createClient } = require('@supabase/supabase-js');
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://dmlrpjtjabanopetnnqt.supabase.co';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbHJwanRqYWJhbm9wZXRubnF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTA4MjA1NCwiZXhwIjoyMDk2NjU4MDU0fQ.2EWNGNbOznPdvJS-n3-sfpvb8fP5yxs1_V2GGPeDUds';
+  global.supabase = createClient(supabaseUrl, supabaseKey);
 }
 
 const app = express();
@@ -84,7 +90,7 @@ app.post('/api/v1/telemetry/orders', requireApiKey, async (req, res) => {
  * Route: GET /api/temporal-audit
  * Purpose: Connect the React Dashboard natively to the Python Data Science Engine.
  */
-app.get('/api/temporal-audit', async (req, res) => {
+app.get('/api/temporal-audit', requireSupabaseAuth, async (req, res) => {
   try {
     const { t1_start, t1_end, t2_start, t2_end } = req.query;
     
@@ -109,41 +115,28 @@ app.get('/api/temporal-audit', async (req, res) => {
 });
 
 // =============== AUTHENTICATION =================
-const USERS_FILE = path.join(__dirname, 'users.json');
+// In production, the React frontend authenticates directly with Supabase.
+// The Node Gateway only verifies JWT tokens.
 
-// Initialize users.json if it doesn't exist
-if (!fs.existsSync(USERS_FILE)) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify([]));
-}
-
-app.post('/api/v1/auth/signup', (req, res) => {
-  const { email, password, companyName } = req.body;
-  const users = JSON.parse(fs.readFileSync(USERS_FILE));
-  
-  if (users.find(u => u.email === email)) {
-    return res.status(400).json({ error: "User already exists" });
+const requireSupabaseAuth = async (req, res, next) => {
+  const authHeader = req.header('Authorization');
+  if (!authHeader) {
+    return res.status(401).json({ error: "Missing Authorization header" });
   }
 
-  const newUser = { id: Date.now().toString(), email, password, companyName, shopId: `SHOP-${Date.now()}` };
-  users.push(newUser);
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-  
-  res.status(201).json({ success: true, user: newUser });
-});
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user }, error } = await supabase.auth.getUser(token);
 
-app.post('/api/v1/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  const users = JSON.parse(fs.readFileSync(USERS_FILE));
-  const user = users.find(u => u.email === email && u.password === password);
-  
-  if (!user) {
-    return res.status(401).json({ error: "Invalid credentials" });
+  if (error || !user) {
+    return res.status(401).json({ error: "Invalid or expired JWT token" });
   }
-  res.status(200).json({ success: true, user });
-});
+
+  req.user = user;
+  next();
+};
 
 // =============== CSV INGESTION =================
-app.post('/api/v1/onboarding/upload-csv', upload.single('file'), async (req, res) => {
+app.post('/api/v1/onboarding/upload-csv', requireSupabaseAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   
   const shopId = req.body.shopId || "DEFAULT-SHOP";

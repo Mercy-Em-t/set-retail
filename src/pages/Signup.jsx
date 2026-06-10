@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Building2, Mail, Lock, ArrowRight } from 'lucide-react';
+import { supabase } from '../services/supabase-client';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -13,16 +14,24 @@ export default function Signup() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('https://set-retail-gateway.onrender.com/api/v1/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            company_name: formData.companyName
+          }
+        }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Signup failed');
       
-      // Store user info and redirect to onboarding
-      localStorage.setItem('user', JSON.stringify(data.user));
+      if (signUpError) throw signUpError;
+      
+      // Store minimal user info, the SQL trigger creates the shopId in the background
+      localStorage.setItem('user', JSON.stringify({
+        id: data.user.id,
+        email: data.user.email,
+        companyName: formData.companyName
+      }));
       navigate('/onboarding');
     } catch (err) {
       setError(err.message);

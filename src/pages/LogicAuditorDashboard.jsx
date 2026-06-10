@@ -33,7 +33,14 @@ export default function LogicAuditorDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('https://set-retail-gateway.onrender.com/api/temporal-audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const response = await fetch('https://set-retail-gateway.onrender.com/api/temporal-audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) throw new Error(`Python Engine Error: ${response.status}`);
       
       const responseData = await response.json();

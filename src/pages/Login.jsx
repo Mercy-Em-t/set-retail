@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { supabase } from '../services/supabase-client';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,16 +14,17 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('https://set-retail-gateway.onrender.com/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (signInError) throw signInError;
       
       // Store user info and redirect to dashboard
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('user', JSON.stringify({
+        id: data.user.id,
+        email: data.user.email
+      }));
       navigate('/logic-auditor');
     } catch (err) {
       setError(err.message);

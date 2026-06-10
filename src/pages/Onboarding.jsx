@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UploadCloud, Link as LinkIcon, CheckCircle, ArrowRight } from 'lucide-react';
+import { supabase } from '../services/supabase-client';
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -29,9 +30,15 @@ export default function Onboarding() {
     formData.append('file', file);
     formData.append('shopId', user.shopId);
 
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
     try {
       const res = await fetch('https://set-retail-gateway.onrender.com/api/v1/onboarding/upload-csv', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       });
       const data = await res.json();

@@ -13,8 +13,8 @@ export class SecureDatabaseAdapter {
     this.shopId = shopId;
     
     // Initialize Supabase Client
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://mock.supabase.co';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'mock-key';
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://dmlrpjtjabanopetnnqt.supabase.co';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbHJwanRqYWJhbm9wZXRubnF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTA4MjA1NCwiZXhwIjoyMDk2NjU4MDU0fQ.2EWNGNbOznPdvJS-n3-sfpvb8fP5yxs1_V2GGPeDUds';
     
     this.db = createClient(supabaseUrl, supabaseKey);
   }
