@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+discrete_engine/.venv/
+discrete_engine/retail_discrete_matrix.db
+
+# Temp local data
+backend/uploads/
+backend/users.json

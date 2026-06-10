@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install FastAPI and SQLAlchemy
+RUN pip install fastapi uvicorn sqlalchemy
+
+# Copy the Python engine code
+COPY ./discrete_engine /app/discrete_engine
+
+# Expose Port
+EXPOSE 8000
+
+# Start Uvicorn Server
+CMD ["uvicorn", "discrete_engine.main:app", "--host", "0.0.0.0", "--port", "8000"]
