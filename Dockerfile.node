@@ -13,6 +13,9 @@ RUN npm install
 WORKDIR /app
 COPY . .
 
+# Install root dependencies (which contains shared libraries like supabase)
+RUN npm install --omit=dev
+
 # Expose Gateway Port
 EXPOSE 3000
 
