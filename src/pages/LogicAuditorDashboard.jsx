@@ -14,9 +14,15 @@ export default function LogicAuditorDashboard() {
 
   useEffect(() => {
     async function fetchDefaultShop() {
-      const { data: shops } = await supabase.from('shops').select('id').limit(1);
-      if (shops && shops.length > 0) {
-        setTargetShopId(shops[0].id);
+      try {
+        const { data: shops } = await supabase.from('shops').select('id').limit(1);
+        if (shops && shops.length > 0) {
+          setTargetShopId(shops[0].id);
+        } else {
+          setTargetShopId('00000000-0000-0000-0000-000000000000');
+        }
+      } catch (e) {
+        setTargetShopId('00000000-0000-0000-0000-000000000000');
       }
     }
     fetchDefaultShop();
@@ -27,8 +33,8 @@ export default function LogicAuditorDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3000/api/temporal-audit');
-      if (!response.ok) throw new Error(`Gateway Error: ${response.status}`);
+      const response = await fetch('http://localhost:8000/api/v1/analytics/audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59');
+      if (!response.ok) throw new Error(`Python Engine Error: ${response.status}`);
       
       const responseData = await response.json();
       setData(responseData);

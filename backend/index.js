@@ -1,24 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Queue } = require('bullmq');
-const IORedis = require('ioredis');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const csv = require('csv-parser');
 
 const upload = multer({ dest: 'uploads/' });
-
-// Redis Connection
-const connection = new IORedis({
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: process.env.REDIS_PORT || 6379,
-  maxRetriesPerRequest: null
-});
-
-// Initialize the master engine queue
-const engineQueue = new Queue('EngineQueue', { connection });
 
 // Note: In a true production environment, these would be compiled into the backend 
 // bundle, but since we are running locally in the same repo, we can dynamically import
@@ -61,18 +49,22 @@ app.post('/api/v1/telemetry/orders', requireApiKey, async (req, res) => {
       return res.status(400).json({ error: "Malformed payload: Missing shopId or telemetryPayload" });
     }
 
-    // 1. Isolate Database Interactions using the ORM Layer
-    const dbAdapter = new SecureDatabaseAdapter(shopId);
-    
-    // 2. Ingest the payload directly into the 'orders' and 'order_items' tables
-    const savedOrder = await dbAdapter.ingestTelemetryPayload(telemetryPayload);
-
-    // 3. Offload the Mathematical Engine execution into the asynchronous Redis queue
-    // This allows the API Gateway to return instantly without waiting for O(n log n) computations
-    await engineQueue.add('ImmediateIngestionAudit', {
-      shopId: shopId,
-      triggerTime: new Date().toISOString()
+    // 2. Route the payload to the Python SQLite Database
+    const ingestRes = await fetch('http://127.0.0.1:8000/api/v1/telemetry/ingest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(telemetryPayload)
     });
+    
+    if (!ingestRes.ok) {
+      throw new Error(`Python Engine Rejected Telemetry: ${ingestRes.status}`);
+    }
+
+    // 3. Trigger the Python Engine Directly (Async fire-and-forget)
+    fetch(`http://127.0.0.1:8000/api/v1/analytics/audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59`)
+      .then(res => res.json())
+      .then(data => console.log("[+] Data Science Engine Pipeline completed for webhook"))
+      .catch(err => console.error("[-] Engine invocation failed:", err.message));
 
     res.status(201).json({ 
       success: true, 
@@ -177,14 +169,22 @@ app.post('/api/v1/onboarding/upload-csv', upload.single('file'), async (req, res
           items: items
         };
 
-        const dbAdapter = new SecureDatabaseAdapter(shopId);
-        await dbAdapter.ingestTelemetryPayload(telemetryPayload);
-        
-        // Trigger Engine
-        await engineQueue.add('ImmediateIngestionAudit', {
-          shopId: shopId,
-          triggerTime: new Date().toISOString()
+        // Send the payload to the Python Data Science Engine for ingestion
+        const ingestRes = await fetch('http://127.0.0.1:8000/api/v1/telemetry/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(telemetryPayload)
         });
+
+        if (!ingestRes.ok) {
+           throw new Error(`Python Engine failed to ingest CSV data: ${ingestRes.status}`);
+        }
+        
+        // Trigger Engine directly
+        fetch(`http://127.0.0.1:8000/api/v1/analytics/audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59`)
+          .then(res => res.json())
+          .then(data => console.log("[+] Data Science Engine Pipeline completed for CSV upload"))
+          .catch(err => console.error("[-] Engine invocation failed:", err.message));
 
         // Cleanup temp file
         fs.unlinkSync(req.file.path);
@@ -196,21 +196,9 @@ app.post('/api/v1/onboarding/upload-csv', upload.single('file'), async (req, res
     });
 });
 
-// Setup Cron Jobs
+// Cron Jobs Disabled for Local Dev without Redis
 async function configureCronJobs() {
-  const shopId = process.env.TARGET_SHOP_ID || "00000000-0000-0000-0000-000000000000"; // Mock shop for demo
-
-  // Daily Firewall: Runs at 23:59 every night
-  await engineQueue.add('DailyFirewall', { shopId }, {
-    repeat: { pattern: '59 23 * * *' }
-  });
-
-  // Monthly Strategy Trigger: Runs at 00:00 on the 1st of every month
-  await engineQueue.add('MonthlyStrategyTrigger', { shopId }, {
-    repeat: { pattern: '0 0 1 * *' }
-  });
-
-  console.log('[+] Autopilot Cron Jobs Scheduled via BullMQ');
+  console.log('[+] Background Cron Jobs disabled (Running without Redis natively)');
 }
 
 // Start Server

@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from .models import ProductModel, OrderItemModel, CustomerModel
+from models import ProductModel, OrderItemModel, CustomerModel
 
 class ProductionDiscreteEngine:
     def __init__(self, db: Session):
