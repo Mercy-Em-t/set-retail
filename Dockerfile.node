@@ -2,17 +2,20 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy backend package files specifically
+COPY backend/package*.json ./backend/
 
-# Install dependencies
+# Install backend dependencies
+WORKDIR /app/backend
 RUN npm install
 
-# Copy application files
+# Return to root app directory and copy all files
+WORKDIR /app
 COPY . .
 
 # Expose Gateway Port
 EXPOSE 3000
 
-# Start Express Server
-CMD ["node", "backend/index.js"]
+# Start Express Server from within the backend directory so relative paths work
+WORKDIR /app/backend
+CMD ["node", "index.js"]
