@@ -6,7 +6,7 @@ const path = require('path');
 const multer = require('multer');
 const csv = require('csv-parser');
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: require('os').tmpdir() });
 
 // Note: In a true production environment, these would be compiled into the backend 
 // bundle, but since we are running locally in the same repo, we can dynamically import
@@ -125,7 +125,7 @@ const requireSupabaseAuth = async (req, res, next) => {
   }
 
   const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const { data: { user }, error } = await global.supabase.auth.getUser(token);
 
   if (error || !user) {
     return res.status(401).json({ error: "Invalid or expired JWT token" });
