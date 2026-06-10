@@ -30,7 +30,7 @@ export default function Onboarding() {
     formData.append('shopId', user.shopId);
 
     try {
-      const res = await fetch('http://localhost:3000/api/v1/onboarding/upload-csv', {
+      const res = await fetch('https://set-retail-gateway.onrender.com/api/v1/onboarding/upload-csv', {
         method: 'POST',
         body: formData
       });

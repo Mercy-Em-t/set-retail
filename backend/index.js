@@ -50,7 +50,8 @@ app.post('/api/v1/telemetry/orders', requireApiKey, async (req, res) => {
     }
 
     // 2. Route the payload to the Python SQLite Database
-    const ingestRes = await fetch('http://127.0.0.1:8000/api/v1/telemetry/ingest', {
+    const engineUrl = process.env.PYTHON_ENGINE_URL || 'http://127.0.0.1:8000';
+    const ingestRes = await fetch(`${engineUrl}/api/v1/telemetry/ingest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(telemetryPayload)
@@ -61,7 +62,7 @@ app.post('/api/v1/telemetry/orders', requireApiKey, async (req, res) => {
     }
 
     // 3. Trigger the Python Engine Directly (Async fire-and-forget)
-    fetch(`http://127.0.0.1:8000/api/v1/analytics/audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59`)
+    fetch(`${engineUrl}/api/v1/analytics/audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59`)
       .then(res => res.json())
       .then(data => console.log("[+] Data Science Engine Pipeline completed for webhook"))
       .catch(err => console.error("[-] Engine invocation failed:", err.message));
@@ -93,7 +94,8 @@ app.get('/api/temporal-audit', async (req, res) => {
     const q_t2_start = t2_start || "2024-01-01 00:00:00";
     const q_t2_end = t2_end || "2024-01-31 23:59:59";
 
-    const url = `http://127.0.0.1:8000/api/v1/analytics/audit?t1_start=${encodeURIComponent(q_t1_start)}&t1_end=${encodeURIComponent(q_t1_end)}&t2_start=${encodeURIComponent(q_t2_start)}&t2_end=${encodeURIComponent(q_t2_end)}`;
+    const engineUrl = process.env.PYTHON_ENGINE_URL || 'http://127.0.0.1:8000';
+    const url = `${engineUrl}/api/v1/analytics/audit?t1_start=${encodeURIComponent(q_t1_start)}&t1_end=${encodeURIComponent(q_t1_end)}&t2_start=${encodeURIComponent(q_t2_start)}&t2_end=${encodeURIComponent(q_t2_end)}`;
     
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Python API Responded with ${response.status}`);
@@ -170,7 +172,8 @@ app.post('/api/v1/onboarding/upload-csv', upload.single('file'), async (req, res
         };
 
         // Send the payload to the Python Data Science Engine for ingestion
-        const ingestRes = await fetch('http://127.0.0.1:8000/api/v1/telemetry/ingest', {
+        const engineUrl = process.env.PYTHON_ENGINE_URL || 'http://127.0.0.1:8000';
+        const ingestRes = await fetch(`${engineUrl}/api/v1/telemetry/ingest`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(telemetryPayload)
@@ -181,7 +184,7 @@ app.post('/api/v1/onboarding/upload-csv', upload.single('file'), async (req, res
         }
         
         // Trigger Engine directly
-        fetch(`http://127.0.0.1:8000/api/v1/analytics/audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59`)
+        fetch(`${engineUrl}/api/v1/analytics/audit?t1_start=2023-01-01 00:00:00&t1_end=2024-01-31 23:59:59&t2_start=2024-02-01 00:00:00&t2_end=2024-12-31 23:59:59`)
           .then(res => res.json())
           .then(data => console.log("[+] Data Science Engine Pipeline completed for CSV upload"))
           .catch(err => console.error("[-] Engine invocation failed:", err.message));

@@ -13,7 +13,7 @@ export default function Signup() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:3000/api/v1/auth/signup', {
+      const res = await fetch('https://set-retail-gateway.onrender.com/api/v1/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
