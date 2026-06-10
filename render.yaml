@@ -7,7 +7,7 @@ services:
     plan: free
     envVars:
       - key: PYTHON_ENGINE_URL
-        value: "http://set-retail-engine:8000"
+        value: "https://set-retail-engine.onrender.com"
 
   # The Python Discrete Math Engine (Using Dockerfile.python)
   - type: web
